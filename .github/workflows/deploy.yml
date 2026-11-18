@@ -71,6 +71,51 @@ jobs:
           test -s "$output/worker.min.js"
           du -sh "$output"
 
+      - name: Smoke-test self-hosted Vietnamese OCR in Chromium
+        working-directory: source/nhiem-vu
+        run: |
+          set -euo pipefail
+          npx playwright install chromium
+          python3 -m http.server 4180 --bind 127.0.0.1 --directory "$RUNNER_TEMP/le-ninh-auth-qa-site/nhiem-vu" >/tmp/le-ninh-ocr-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          node --input-type=module <<'NODE'
+          import {createRequire} from 'node:module';
+          const require=createRequire(import.meta.url);
+          const {chromium}=require('@playwright/test');
+          const browser=await chromium.launch({headless:true});
+          try {
+            const page=await browser.newPage();
+            await page.goto('http://127.0.0.1:4180/',{waitUntil:'domcontentloaded'});
+            const text=await page.evaluate(async()=>{
+              await new Promise((resolve,reject)=>{
+                const script=document.createElement('script');
+                script.src='/ocr/tesseract.min.js';
+                script.onload=resolve;script.onerror=()=>reject(Error('OCR script unavailable'));
+                document.head.appendChild(script);
+              });
+              const runtime=window.Tesseract;
+              if(!runtime)throw Error('OCR library not initialized');
+              const worker=await runtime.createWorker('vie',1,{
+                workerPath:'/ocr/worker.min.js',corePath:'/ocr/core',langPath:'/ocr/lang',
+                workerBlobURL:false,cacheMethod:'none'
+              });
+              try {
+                const canvas=document.createElement('canvas');
+                canvas.width=900;canvas.height=150;
+                const ctx=canvas.getContext('2d');
+                ctx.fillStyle='#fff';ctx.fillRect(0,0,900,150);
+                ctx.fillStyle='#000';ctx.font='bold 43px Arial';
+                ctx.fillText('NGAY 18 THANG 11 NAM 2026',20,90);
+                const result=await worker.recognize(canvas);
+                return result.data.text;
+              } finally {await worker.terminate();}
+            });
+            if(!text.includes('2026'))throw Error('OCR could not read the local synthetic sample: '+text);
+            console.log('Browser OCR loaded all local assets and recognized synthetic text:',text.trim());
+          } finally {await browser.close();}
+          NODE
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
