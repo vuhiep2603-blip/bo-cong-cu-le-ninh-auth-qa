@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vuhiep2603-blip/bo-cong-cu-le-ninh-demo
-          ref: d29c6c710c62b97aebc70eec8ec1bb961f57bf10
+          ref: 7fd30c1b940bfb11fb11329c715642dd834ccd53
           path: source
           persist-credentials: false
 
@@ -40,6 +40,7 @@ jobs:
           VITE_FIREBASE_APP_ID: '1:562123800725:web:2a1a5411d08c27622e1b9c'
         run: |
           npm ci
+          npm install --no-save --package-lock=false tesseract.js@5.1.1 @tesseract.js-data/vie@1.0.0
           npm run build
 
       - name: Assemble QA Pages artifact outside source checkout
@@ -52,6 +53,23 @@ jobs:
             echo "Demo/private test files unexpectedly included" >&2
             exit 1
           fi
+
+      - name: Bundle same-origin Vietnamese OCR engine, WASM and traineddata
+        run: |
+          set -euo pipefail
+          source_dir=source/nhiem-vu/node_modules
+          output="$RUNNER_TEMP/le-ninh-auth-qa-site/nhiem-vu/ocr"
+          mkdir -p "$output/core" "$output/lang"
+          cp "$source_dir/tesseract.js/dist/tesseract.min.js" "$output/tesseract.min.js"
+          cp "$source_dir/tesseract.js/dist/worker.min.js" "$output/worker.min.js"
+          find "$source_dir/tesseract.js-core" -maxdepth 1 -type f \( -name '*.wasm' -o -name '*.js' \) -exec cp '{}' "$output/core/" \;
+          language="$(find "$source_dir/@tesseract.js-data/vie" -name 'vie.traineddata.gz' -type f | head -n 1)"
+          test -n "$language"
+          cp "$language" "$output/lang/vie.traineddata.gz"
+          test -s "$output/lang/vie.traineddata.gz"
+          test -s "$output/core/tesseract-core.wasm.js"
+          test -s "$output/worker.min.js"
+          du -sh "$output"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
