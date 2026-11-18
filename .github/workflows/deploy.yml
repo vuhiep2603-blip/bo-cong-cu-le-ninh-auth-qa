@@ -1,0 +1,73 @@
+name: Deploy Google Sign-In QA to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-qa-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated source PR #4 at reviewed commit
+        uses: actions/checkout@v4
+        with:
+          repository: vuhiep2603-blip/bo-cong-cu-le-ninh-demo
+          ref: a11d986554033d1c775083632b2ab2b0151a2002
+          path: source
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/nhiem-vu/package-lock.json
+
+      - name: Build production application for Firebase Spark
+        working-directory: source/nhiem-vu
+        env:
+          VITE_FIREBASE_API_KEY: AIzaSyD9E6USFDF7bdnhWTwYWLkrlQbZGso2qQ4
+          VITE_FIREBASE_AUTH_DOMAIN: vpduln-quanlynhiemvu.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: vpduln-quanlynhiemvu
+          VITE_FIREBASE_APP_ID: '1:562123800725:web:2a1a5411d08c27622e1b9c'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble QA Pages artifact outside source checkout
+        run: |
+          node source/nhiem-vu/package-pages.mjs "$RUNNER_TEMP/le-ninh-auth-qa-site"
+          test -f "$RUNNER_TEMP/le-ninh-auth-qa-site/nhiem-vu/index.html"
+          test -f "$RUNNER_TEMP/le-ninh-auth-qa-site/giay-moi.html"
+          test -f "$RUNNER_TEMP/le-ninh-auth-qa-site/lich-cong-tac.html"
+          if find "$RUNNER_TEMP/le-ninh-auth-qa-site" -type f \\( -name '.env.local' -o -name 'seed-demo.mjs' -o -name 'demo.html' \\) | grep -q .; then
+            echo "Demo/private test files unexpectedly included" >&2
+            exit 1
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/le-ninh-auth-qa-site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
