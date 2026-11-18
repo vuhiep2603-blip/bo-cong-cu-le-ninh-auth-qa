@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vuhiep2603-blip/bo-cong-cu-le-ninh-demo
-          ref: 61c9c8bb5e497c67e5fe92a3374c6696d7cc8e66
+          ref: bdb223c7c0d4985b14999f4b84e24e677d3468ec
           path: source
           persist-credentials: false
 
