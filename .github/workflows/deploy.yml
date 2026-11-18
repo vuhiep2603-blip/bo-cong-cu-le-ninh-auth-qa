@@ -1,4 +1,4 @@
-name: Deploy Google Sign-In QA to GitHub Pages
+name: Deploy Full Task Management QA to GitHub Pages
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vuhiep2603-blip/bo-cong-cu-le-ninh-demo
-          ref: a11d986554033d1c775083632b2ab2b0151a2002
+          ref: 61c9c8bb5e497c67e5fe92a3374c6696d7cc8e66
           path: source
           persist-credentials: false
 
