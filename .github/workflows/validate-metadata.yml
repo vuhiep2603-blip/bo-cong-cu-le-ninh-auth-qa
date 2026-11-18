@@ -1,0 +1,36 @@
+name: Validate task app source without deployment
+on:
+  push:
+    paths:
+      - '.github/workflows/validate-metadata.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reviewed PR #4 source
+        uses: actions/checkout@v4
+        with:
+          repository: vuhiep2603-blip/bo-cong-cu-le-ninh-demo
+          ref: 397758814484a6f9dd40635632bb5f7e9fa785f2
+          path: source
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/nhiem-vu/package-lock.json
+      - name: Install, test metadata and build
+        working-directory: source/nhiem-vu
+        env:
+          VITE_FIREBASE_API_KEY: AIzaSyD9E6USFDF7bdnhWTwYWLkrlQbZGso2qQ4
+          VITE_FIREBASE_AUTH_DOMAIN: vpduln-quanlynhiemvu.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: vpduln-quanlynhiemvu
+          VITE_FIREBASE_APP_ID: '1:562123800725:web:2a1a5411d08c27622e1b9c'
+        run: |
+          npm ci
+          npm test
+          npm run build
