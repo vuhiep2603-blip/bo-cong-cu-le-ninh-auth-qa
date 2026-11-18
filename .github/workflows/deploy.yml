@@ -48,7 +48,7 @@ jobs:
           test -f "$RUNNER_TEMP/le-ninh-auth-qa-site/nhiem-vu/index.html"
           test -f "$RUNNER_TEMP/le-ninh-auth-qa-site/giay-moi.html"
           test -f "$RUNNER_TEMP/le-ninh-auth-qa-site/lich-cong-tac.html"
-          if find "$RUNNER_TEMP/le-ninh-auth-qa-site" -type f \\( -name '.env.local' -o -name 'seed-demo.mjs' -o -name 'demo.html' \\) | grep -q .; then
+          if find "$RUNNER_TEMP/le-ninh-auth-qa-site" -type f | grep -E '/(\.env\.local|seed-demo\.mjs|demo\.html)$'; then
             echo "Demo/private test files unexpectedly included" >&2
             exit 1
           fi
