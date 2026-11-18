@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vuhiep2603-blip/bo-cong-cu-le-ninh-demo
-          ref: fd5d223e11b14d3e7abbb52678170a4b597a79c0
+          ref: 7fd30c1b940bfb11fb11329c715642dd834ccd53
           path: source
           persist-credentials: false
       - name: Set up Node
